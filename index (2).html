@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="mr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MoodBuddy</title>
+<style>
+  :root{
+    --accent:#27E1C1;
+    --card-bg:rgba(255,255,255,0.92);
+    --text-dark:#0f172a;
+  }
+  body{
+    margin:0;
+    font-family:"Noto Sans Devanagari", Arial, sans-serif;
+    transition: background 1s ease;
+    background:#F2FBFF;
+    background-size:cover;
+    background-position:center;
+  }
+
+  /* Right-top feedback button */
+  .feedback{
+    position:fixed; top:18px; right:18px;
+    background:var(--accent);
+    color:#fff; padding:10px 16px;
+    border-radius:10px; font-weight:600;
+    text-decoration:none; z-index:1000;
+    box-shadow:0 6px 18px rgba(39,225,193,0.18);
+  }
+
+  .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px;}
+  .card{
+    width:min(980px,95%); background:var(--card-bg);
+    padding:28px; border-radius:18px;
+    box-shadow:0 12px 40px rgba(0,0,0,0.08); text-align:center;
+    position:relative; z-index:1;
+  }
+  h1{margin:0;color:var(--accent);}
+  #greetText{margin:10px 0;font-weight:600;color:#475569;}
+  .content{display:flex;gap:24px;flex-wrap:wrap;justify-content:center;align-items:center;}
+  .quote-box{
+    flex:1 1 420px; background:var(--card-bg);
+    padding:20px; border-radius:12px;
+    font-size:20px; opacity:0;
+    transform:translateY(8px); transition:.6s;
+    min-height:140px; display:flex;
+    align-items:center; justify-content:center; text-align:center;
+  }
+  .quote-box.show{opacity:1;transform:translateY(0);}
+  .img-box{
+    flex:0 1 340px; border-radius:12px;
+    overflow:hidden; box-shadow:0 8px 28px rgba(0,0,0,0.1);
+    min-height:240px;
+  }
+  .img-box img{
+    width:100%; height:100%; object-fit:cover;
+    border-radius:12px; transition:opacity .8s;
+  }
+  #nextBtn{
+    position:fixed;right:20px;bottom:20px;
+    padding:12px 18px;
+    background:var(--accent); color:#fff;
+    border:none; border-radius:999px; cursor:pointer; font-size:16px;
+    z-index:1000;
+  }
+  #soundToggle{
+    position:fixed;left:20px;bottom:20px;
+    background:#fff;border:none;padding:10px 15px;
+    border-radius:10px;box-shadow:0 6px 15px rgba(0,0,0,0.15);
+    cursor:pointer;font-weight:600; z-index:1000;
+  }
+  @media(max-width:800px){
+    .content{flex-direction:column-reverse;}
+    .img-box{width:100%;}
+    .quote-box{font-size:18px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- Background music -->
+<audio id="bgMusic" loop>
+  <source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_ef23e0dca9.mp3?filename=indian-flute-ambient-138130.mp3" type="audio/mpeg">
+</audio>
+<button id="soundToggle">🔇 Unmute</button>
+
+<a class="feedback" href="https://docs.google.com/forms/d/e/1FAIpQLScv6oPVVTVh6wL7xQIpAGkcQ4WTB5KwQ_5gf_eoVvtTWCd6KQ/viewform?usp=publish-editor" target="_blank">Feedback Form</a>
+
+<div class="wrap">
+  <div class="card">
+    <h1>MoodBuddy</h1>
+    <div id="greetText">Loading...</div>
+    <div class="content">
+      <div class="quote-box" id="quoteBox">Loading...</div>
+      <div class="img-box"><img id="moodImg" src=""></div>
+    </div>
+  </div>
+</div>
+
+<button id="nextBtn">Next ▶</button>
+
+<script>
+const moods={
+  morning:{bg:"#E3FFF8", greet:"शुभ सकाळ!", items:[
+    {text:"तू यशस्वी झाला तर अभिमान तुला नाही—सर्वात जास्त समाधान तुझ्या आई-वडिलांच्या डोळ्यांत दिसेल.", img:"https://images.unsplash.com/photo-1502082553048-f009c37129b9"},
+    {text:"तुझे कष्ट तुला थकवतील, पण तुझे यश तुझ्या आई-वडिलांना खुश करेल—म्हणून हार मानू नकोस.", img:"https://images.unsplash.com/photo-1470770841072-f978cf4d019e"},
+    {text:"सकाळची ताजी हवा आणि ताजे विचार—आज मोठे करा!", img:"https://images.unsplash.com/photo-1502082553048-f009c37129b9"}
+  ]},
+  afternoon:{bg:"#FFF7D1", greet:"शुभ दुपार!", items:[
+    {text:"तुझं प्रत्येक मोठं पाऊल त्यांच्या छोट्या त्यागावर उभारलेलं आहे—पुढे जा.", img:"https://images.unsplash.com/photo-1500534314209-a25ddb2bd429"},
+    {text:"आई-वडिलांच्या स्वप्नांची किंमत कधीच कमी नसते—त्यांना सत्य कर.", img:"https://images.unsplash.com/photo-1489674267075-cee793167910"},
+    {text:"अर्धा दिवस पार—संधी अजूनही अनेक आहेत.", img:"https://images.unsplash.com/photo-1489674267075-cee793167910"}
+  ]},
+  evening:{bg:"#E6E9FF", greet:"शुभ संध्या!", items:[
+    {text:"सायंकाळी शांत व्हा — स्वतःला वेळ द्या.", img:"https://images.unsplash.com/photo-1495567720989-cebdbdd97913"},
+    {text:"दिवसाचा आढावा घ्या आणि पुढच्या पावलावर लक्ष.", img:"https://images.unsplash.com/photo-1501973801540-537f08ccae7b"},
+    {text:"आजचा दिवस संपला — ताजेतवाने व्हा.", img:"https://images.unsplash.com/photo-1470770841072-f978cf4d019e"}
+  ]},
+  night:{bg:"#DDE6F8", greet:"शुभ रात्री!", items:[
+    {text:"शांत झोपा — उद्या नवीन संधी.", img:"https://images.unsplash.com/photo-1479888230021-c24f136d849f"},
+    {text:"आजचे ओझे सोडा — उद्या पुन्हा प्रयत्न.", img:"https://images.unsplash.com/photo-1500534314209-a25ddb2bd429"},
+    {text:"शांत झोप म्हणजे उद्याच्या विजयाची तयारी.", img:"https://images.unsplash.com/photo-1479888230021-c24f136d849f"}
+  ]}
+};
+
+const used={morning:[],afternoon:[],evening:[],night:[]};
+function pick(m){
+  const len=moods[m].items.length;
+  if(used[m].length===len) used[m]=[];
+  let i; do{i=Math.floor(Math.random()*len);}while(used[m].includes(i));
+  used[m].push(i); return i;
+}
+
+function getMood(){
+  const h=new Date().getHours();
+  if(h>=5&&h<12) return "morning";
+  if(h>=12&&h<17) return "afternoon";
+  if(h>=17&&h<21) return "evening";
+  return "night";
+}
+
+const quoteBox=document.getElementById("quoteBox");
+const moodImg=document.getElementById("moodImg");
+const greetText=document.getElementById("greetText");
+
+function showNext(){
+  const m=getMood();
+  const i=pick(m);
+  const item=moods[m].items[i];
+  document.body.style.background=moods[m].bg;
+  document.body.style.backgroundImage=`linear-gradient(rgba(255,255,255,0.3),rgba(255,255,255,0.3)),url(${item.img})`;
+  document.body.style.backgroundSize='cover';
+  document.body.style.backgroundPosition='center';
+  greetText.textContent=moods[m].greet;
+  quoteBox.classList.remove("show");
+  moodImg.style.opacity=0;
+  setTimeout(()=>{
+    quoteBox.textContent=item.text;
+    moodImg.src=item.img;
+    quoteBox.classList.add("show");
+    moodImg.style.opacity=1;
+  },350);
+}
+
+document.getElementById("nextBtn").onclick=showNext;
+showNext();
+
+/* Flute music */
+const music=document.getElementById("bgMusic");
+const toggle=document.getElementById("soundToggle");
+toggle.onclick=()=>{
+  if(music.muted){music.muted=false; toggle.textContent="🔊 Mute";}
+  else{music.muted=true; toggle.textContent="🔇 Unmute";}
+};
+document.addEventListener("click",()=>music.play().catch(()=>{}),{once:true});
+document.addEventListener("touchstart",()=>music.play().catch(()=>{}),{once:true});
+</script>
+
+</body>
+</html>
